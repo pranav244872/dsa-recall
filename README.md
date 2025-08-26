@@ -1,6 +1,6 @@
 # DSA Recall - Spaced Repetition App for Data Structures & Algorithms
 
-A terminal-based spaced repetition application for practicing Data Structures and Algorithms problems.
+A GUI-based spaced repetition application for practicing Data Structures and Algorithms problems.
 
 ## Features
 
@@ -8,7 +8,7 @@ A terminal-based spaced repetition application for practicing Data Structures an
 - 🧠 Spaced repetition algorithm for optimal review scheduling
 - 🔥 Streak tracking to maintain consistent practice
 - 📝 External editor integration for writing detailed notes
-- 🖥️ Clean terminal-based user interface
+- 🖥️ Clean GUI interface with card-based problem display
 - 💾 Offline SQLite database
 - 🔄 Cross-platform support (Linux, Windows, macOS)
 
@@ -45,28 +45,39 @@ The executable will be created in the `dist/` directory.
 
 ## Usage
 
-### Main Menu
+### Main Dashboard
 
-Navigate using arrow keys and press Enter to select:
+The main dashboard shows problems due for review today in a card-based format. Navigation options include:
 
-1. ➕ Add Problem - Add a new DSA problem
-2. 📅 Review Due Problems - Review problems scheduled for today
-3. 📖 View All Problems - Browse all stored problems
-4. 🔥 View Streak Tracker - Check your practice streak
-5. 🚪 Exit - Close the application
+- **[a] Add Problem** - Add a new DSA problem
+- **[b] View All Problems** - Browse all stored problems
+- **[s] View Streak Tracker** - Check your practice streak
+- **[q] Exit** - Close the application
+
+### Problem Cards
+
+Each problem card displays:
+- Problem title and link
+- Preview of approach and code (if set)
+- Current streak level and next review date
+
+Actions available for each problem:
+- **[e1] Easy** - Mark problem as easy (increases streak)
+- **[h1] Hard** - Mark problem as hard (resets streak)
+- **[v1] View/Edit** - Open detailed problem view
 
 ### Keyboard Shortcuts
 
-- `[a]` - Toggle approach text
-- `[c]` - Toggle code text
-- `[e]` - Mark problem as easy (increases streak)
-- `[h]` - Mark problem as hard (resets streak)
-- `[E]` - Edit problem
-- `[D]` - Delete problem
+In problem review mode:
+- `[e]` - Mark problem as easy
+- `[h]` - Mark problem as hard
 - `[t]` - Edit title
 - `[l]` - Edit link
+- `[a]` - Edit approach (external editor)
+- `[c]` - Edit code (external editor)
+- `[o]` - Open link in browser
 - `[s]` - Save changes
-- `[←]` - Go back
+- `[b]` - Go back
 
 ### Spaced Repetition Algorithm
 
@@ -92,8 +103,8 @@ For writing detailed approaches and code, the app uses your system's default edi
 ## Requirements
 
 - Python 3.7+
-- textual>=0.41.0
 - pyinstaller>=5.0.0 (for creating executables)
+- No additional GUI framework dependencies (uses built-in Python libraries)
 
 ## Development
 
@@ -102,11 +113,10 @@ The codebase is modular and well-commented for easy expansion:
 ```
 src/
 ├── database/          # SQLite models and operations
-├── ui/               # Terminal UI components
-│   ├── screens/      # Individual application screens
-│   └── widgets/      # Reusable UI widgets
-├── utils/            # Utility functions
-└── config.py         # Configuration constants
+├── gui/               # GUI components and windows
+│   └── windows/       # Individual application windows
+├── utils/             # Utility functions
+└── config.py          # Configuration constants
 ```
 
 ## License
