@@ -38,7 +38,7 @@ def get_terminal_size() -> tuple[int, int]:
     """
     try:
         size = os.get_terminal_size()
-        return size.columns, size.rows
+        return size.columns, size.lines
     except OSError:
         # Fallback to reasonable defaults
         return 80, 24
