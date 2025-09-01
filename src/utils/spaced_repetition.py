@@ -82,7 +82,7 @@ def auto_mark_overdue_problems(problems: list[Problem]) -> int:
     """
     Automatically mark overdue problems as hard.
     
-    Problems that are overdue (next_review < yesterday) are automatically
+    Problems that are overdue (next_review < today) are automatically
     marked as hard to reset their spaced repetition interval.
     
     Args:
@@ -92,10 +92,10 @@ def auto_mark_overdue_problems(problems: list[Problem]) -> int:
         int: Number of problems marked as auto-hard
     """
     count = 0
-    yesterday = date.today() - timedelta(days=1)
+    today = date.today()
     
     for problem in problems:
-        if problem.next_review and problem.next_review < yesterday:
+        if problem.next_review and problem.next_review < today:
             # Auto-mark as hard
             problem.streak_level = INITIAL_STREAK_LEVEL
             problem.next_review = calculate_next_review_date(problem.streak_level, mark_as_easy=False)
@@ -103,6 +103,19 @@ def auto_mark_overdue_problems(problems: list[Problem]) -> int:
             count += 1
     
     return count
+
+
+def reset_problem_streak(problem: Problem) -> None:
+    """
+    Reset a problem's streak and make it due for review today.
+    
+    Args:
+        problem: Problem instance to update
+    """
+    problem.streak_level = INITIAL_STREAK_LEVEL
+    problem.next_review = date.today()
+    problem.last_marked = date.today()
+    problem.add_history_entry("reset")
 
 
 def get_streak_statistics(problem: Problem) -> dict:

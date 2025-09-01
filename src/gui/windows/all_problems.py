@@ -5,6 +5,7 @@ This window shows a list of all problems with search and management options.
 """
 
 from datetime import date
+from src.utils.spaced_repetition import reset_problem_streak
 
 
 def clear_screen():
@@ -60,6 +61,7 @@ def show_all_problems_window(db_manager):
         print("\nActions:")
         print("[v<ID>] View/Edit problem (e.g., v1)")
         print("[d<ID>] Delete problem (e.g., d1)")
+        print("[t<ID>] Review Today (reset streak, e.g., t1)")
         print("[r] Refresh list")
         print("[b] Back to main dashboard")
         
@@ -81,7 +83,7 @@ def show_all_problems_window(db_manager):
                     else:
                         print("Problem not found!")
                         input("Press Enter to continue...")
-                except ValueError:
+                except (ValueError, IndexError):
                     print("Invalid problem ID!")
                     input("Press Enter to continue...")
             elif choice.startswith('d'):
@@ -101,7 +103,23 @@ def show_all_problems_window(db_manager):
                     else:
                         print("Problem not found!")
                         input("Press Enter to continue...")
-                except ValueError:
+                except (ValueError, IndexError):
+                    print("Invalid problem ID!")
+                    input("Press Enter to continue...")
+            elif choice.startswith('t'):
+                # Review Today
+                try:
+                    problem_id = int(choice[1:])
+                    problem = db_manager.get_problem(problem_id)
+                    if problem:
+                        reset_problem_streak(problem)
+                        db_manager.update_problem(problem)
+                        print(f"✅ Problem '{problem.title}' has been scheduled for review today.")
+                        input("Press Enter to continue...")
+                    else:
+                        print("Problem not found!")
+                        input("Press Enter to continue...")
+                except (ValueError, IndexError):
                     print("Invalid problem ID!")
                     input("Press Enter to continue...")
             else:

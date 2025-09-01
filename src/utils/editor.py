@@ -99,7 +99,7 @@ def edit_approach(initial_content: str = "") -> Optional[str]:
     return edit_text(initial_content, ".md")
 
 
-def edit_code(initial_content: str = "", language: str = "python") -> Optional[str]:
+def edit_code(initial_content: str = "", language: str = "cpp") -> Optional[str]:
     """
     Edit code using external editor with appropriate file extension.
     

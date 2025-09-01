@@ -126,25 +126,19 @@ class DatabaseManager:
             )
             return [problem_from_row(row) for row in cursor.fetchall()]
     
-    def get_overdue_problems(self, cutoff_date: date = None) -> List[Problem]:
+    def get_overdue_problems(self) -> List[Problem]:
         """
-        Retrieve problems that are overdue (past yesterday).
+        Retrieve problems that are overdue (due before today).
         
-        Args:
-            cutoff_date: Problems due before this date are considered overdue
-                        (defaults to yesterday)
-            
         Returns:
             List of overdue Problem instances
         """
-        if cutoff_date is None:
-            cutoff_date = date.today() - timedelta(days=1)
-        
+        today = date.today()
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 'SELECT * FROM problems WHERE next_review < ?',
-                (cutoff_date.isoformat(),)
+                (today.isoformat(),)
             )
             return [problem_from_row(row) for row in cursor.fetchall()]
     

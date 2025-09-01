@@ -74,24 +74,6 @@ class DSARecallGUI:
                     problem = self.db.get_problem(problem_id)
                     if problem:
                         show_problem_card_window(self.db, problem)
-                elif action.startswith('mark_easy:'):
-                    problem_id = int(action.split(':')[1])
-                    problem = self.db.get_problem(problem_id)
-                    if problem:
-                        mark_problem_easy(problem)
-                        self.db.update_problem(problem)
-                        self.db.record_daily_review()
-                        print(f"✅ Marked '{problem.title}' as Easy!")
-                        input("Press Enter to continue...")
-                elif action.startswith('mark_hard:'):
-                    problem_id = int(action.split(':')[1])
-                    problem = self.db.get_problem(problem_id)
-                    if problem:
-                        mark_problem_hard(problem)
-                        self.db.update_problem(problem)
-                        self.db.record_daily_review()
-                        print(f"❌ Marked '{problem.title}' as Hard!")
-                        input("Press Enter to continue...")
                 
             except KeyboardInterrupt:
                 print("\n\nGoodbye! 👋")
