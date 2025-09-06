@@ -1,3 +1,0 @@
-"""
-UI widgets package initialization
-"""
