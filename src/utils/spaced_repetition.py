@@ -98,7 +98,7 @@ def auto_mark_overdue_problems(problems: list[Problem]) -> int:
         if problem.next_review and problem.next_review < today:
             # Auto-mark as hard
             problem.streak_level = INITIAL_STREAK_LEVEL
-            problem.next_review = calculate_next_review_date(problem.streak_level, mark_as_easy=False)
+            problem.next_review = today
             problem.add_history_entry("auto-hard")
             count += 1
     
