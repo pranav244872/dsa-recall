@@ -56,3 +56,5 @@ temp/
 # OS specific
 .DS_Store
 Thumbs.db
+
+certs/
