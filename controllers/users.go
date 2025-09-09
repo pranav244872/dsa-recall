@@ -3,9 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/pranav244872/dsa-recall/models"
+	"github.com/pranav244872/dsa-recall/rand"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,17 +56,19 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	if err := u.UserService.DB.Create(&user); err != nil {
 		// Check for the specific error for a duplicate email.
 		if errors.Is(err, models.ErrorEmailTaken) {
-			respondWithError(w, http.StatusConflict, err.Error())
+			respondWithError(w, http.StatusConflict, "That email address is already taken!")
 			return
 		}
 
-		respondWithError(w, http.StatusBadRequest, "Failed to create new user")
+		log.Println("user controller: Error creating user:", err)
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong. Please try again")
 		return
 	}
 
 	// automatically sign the user in after they create an account
 	if err := u.signIn(w, &user); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Something went wrong during sign-in")
+		log.Println("user controller: Error signing in new user:", err)
+		respondWithError(w, http.StatusInternalServerError, "Account created but failed to sign you in")
 		return
 	}
 
@@ -85,7 +90,7 @@ type LoginForm struct {
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	form := LoginForm{}
 	if err := parseJSON(r, &form); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
 
@@ -94,20 +99,39 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		// 3. Relay the Result
 		switch err {
 		case models.ErrorNotFound, models.ErrorIncorrectPassword:
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			respondWithError(w, http.StatusUnauthorized, "Invalid Credentials")
 		default:
-			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			log.Println("user controller: Error authenticating user:", err)
+			respondWithError(w, http.StatusInternalServerError, "Something went wrong. Please try again")
 		}
 		return
 	}
 
 	if err := u.signIn(w, user); err != nil {
+		log.Println("user controller: Error signing in user:", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to sign in")
 		return
 	}
 
 	// Respond with user data (or token, in a real app)
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Login successful"})
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// User Logout
+///////////////////////////////////////////////////////////////////////////////
+
+func (u *Users) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie := http.Cookie{
+		Name:     "remember_token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour), // Set expiry to the past
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+	http.SetCookie(w, &cookie)
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,13 +148,13 @@ type UserResponse struct {
 func (u *Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("remember_token")
 	if err != nil {
-		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
 	user, err := u.UserService.DB.ByRememberToken(cookie.Value)
 	if err != nil {
-		http.Error(w, "Invalid session token", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Invalid session token")
 		return
 	}
 
@@ -150,6 +174,13 @@ func (u *Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 // signIn helper function sign in users via cookies
 func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
+	// Generate a new remember token for every sign-in.
+	token, err := rand.RememberToken()
+	if err != nil {
+		return err
+	}
+	user.Remember = token
+
 	if err := u.UserService.DB.Update(user); err != nil {
 		return err
 	}

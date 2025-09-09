@@ -52,6 +52,7 @@ func (s *Server) configureRouter() {
 	usersC := controllers.NewUsers(s.userService)
 	s.router.Post("/api/signup", usersC.Create)
 	s.router.Post("/api/login", usersC.Login)
+	s.router.Post("/api/logout", usersC.Logout)
 	s.router.Get("/api/me", usersC.CurrentUser)
 }
 

@@ -17,7 +17,7 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 }
 
 // respondWithJSON sends a JSON response with a specific status code and payload.
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(payload)
