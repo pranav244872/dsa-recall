@@ -4,15 +4,12 @@ import (
 	"errors"
 	"net/mail"
 	"strings"
-	"time"
 
 	"github.com/pranav244872/dsa-recall/config"
 	"github.com/pranav244872/dsa-recall/hash"
 	"github.com/pranav244872/dsa-recall/rand"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,16 +28,16 @@ var (
 ///////////////////////////////////////////////////////////////////////////////
 
 type User struct {
-	ID           int64 `gorm:"primaryKey;autoIncrement"`
+	gorm.Model // Includes ID, CreatedAt, UpdatedAt, DeletedAt
+
 	Name         string
 	Email        string `gorm:"not null;uniqueIndex"`
 	Password     string `gorm:"-"`
 	PasswordHash string `gorm:"not null"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	Remember     string         `gorm:"-"`
-	RememberHash string         `gorm:"not null;uniqueIndex"`
+	Remember     string `gorm:"-"`
+	RememberHash string `gorm:"not null;uniqueIndex"`
+
+	Problems []Problem `gorm:"foreignKey:UserID"`
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,7 +49,7 @@ type UserDB interface {
 	Create(user *User) error
 
 	// Read
-	ByID(id int64) (*User, error)
+	ByID(id uint) (*User, error)
 	ByEmail(email string) (*User, error)
 	ByRememberToken(token string) (*User, error)
 
@@ -60,12 +57,7 @@ type UserDB interface {
 	Update(user *User) error
 
 	// Delete
-	Delete(id int64) error
-
-	// Lifecycle Methods
-	Close() error
-	AutoMigrate() error
-	DestructiveReset() error
+	Delete(id uint) error
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,16 +68,13 @@ type UserService struct {
 	DB UserDB
 }
 
-func NewUserService(connectionInfo string) (*UserService, error) {
+func NewUserService(dbCon *gorm.DB) (*UserService, error) {
 
 	// Create shared tools first
 	hmac := hash.NewHMAC(config.HMACKey)
 
 	// Create db layer implementation
-	ug, err := newUserGorm(connectionInfo)
-	if err != nil {
-		return nil, err
-	}
+	ug := &userGorm{db: dbCon}
 
 	// create validation layer
 	uv := newUserValidator(ug, hmac)
@@ -184,7 +173,7 @@ func (uv *userValidator) Update(user *User) error {
 }
 
 // Delete
-func (uv *userValidator) Delete(id int64) error {
+func (uv *userValidator) Delete(id uint) error {
 	var user User
 	user.ID = id
 	err := runUserValFns(&user, uv.idGreaterThan(0))
@@ -207,7 +196,7 @@ func runUserValFns(user *User, fns ...userValFn) error {
 	return nil
 }
 
-func (uv *userValidator) idGreaterThan(n int64) userValFn {
+func (uv *userValidator) idGreaterThan(n uint) userValFn {
 	return func(user *User) error {
 		if user.ID <= n {
 			return ErrorInvalidId
@@ -341,22 +330,6 @@ type userGorm struct {
 	db *gorm.DB
 }
 
-// constructor which returns an instance of userGorm
-func newUserGorm(connectionInfo string) (*userGorm, error) {
-	// initialize db connection
-	db, err := gorm.Open(postgres.Open(connectionInfo), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &userGorm{
-		db: db,
-	}, nil
-}
-
 // --- CRUD operations ---
 
 // Create user
@@ -366,7 +339,7 @@ func (ug *userGorm) Create(user *User) error {
 }
 
 // Retrieve by id
-func (ug *userGorm) ByID(id int64) (*User, error) {
+func (ug *userGorm) ByID(id uint) (*User, error) {
 	var user User
 	db := ug.db.Where("id = ?", id)
 	err := first(db, &user)
@@ -406,8 +379,10 @@ func (ug *userGorm) Update(user *User) error {
 }
 
 // Delete
-func (ug *userGorm) Delete(id int64) error {
-	user := User{ID: id}
+func (ug *userGorm) Delete(id uint) error {
+	user := User{
+		Model: gorm.Model{ID: 1},
+	}
 	result := ug.db.Delete(&user)
 
 	if result.Error != nil {
@@ -419,28 +394,6 @@ func (ug *userGorm) Delete(id int64) error {
 	}
 
 	return nil
-}
-
-// closes the database connection.
-func (ug *userGorm) Close() error {
-	sqlDB, err := ug.db.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
-}
-
-// runs the GORM auto-migration.
-func (ug *userGorm) AutoMigrate() error {
-	return ug.db.AutoMigrate(&User{})
-}
-
-// drops and rebuilds the user table.
-func (ug *userGorm) DestructiveReset() error {
-	if err := ug.db.Migrator().DropTable(&User{}); err != nil {
-		return err
-	}
-	return ug.AutoMigrate()
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,19 +13,20 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/pranav244872/dsa-recall/config"
 	"github.com/pranav244872/dsa-recall/controllers"
+	auth "github.com/pranav244872/dsa-recall/middleware"
 	"github.com/pranav244872/dsa-recall/models"
 )
 
 type Server struct {
-	router      *chi.Mux
-	userService *models.UserService
+	router   *chi.Mux
+	services *models.Services
 }
 
 // NewServer creates a new server with all the routes and dependencies
-func NewServer(userService *models.UserService) *Server {
+func NewServer(services *models.Services) *Server {
 	s := &Server{
-		router:      chi.NewRouter(),
-		userService: userService,
+		router:   chi.NewRouter(),
+		services: services,
 	}
 
 	// Regester middleware and routes
@@ -49,11 +50,20 @@ func (s *Server) configureRouter() {
 	s.router.Use(corsConfig())
 
 	// User routes
-	usersC := controllers.NewUsers(s.userService)
+	usersC := controllers.NewUsers(s.services.UserService)
 	s.router.Post("/api/signup", usersC.Create)
 	s.router.Post("/api/login", usersC.Login)
 	s.router.Post("/api/logout", usersC.Logout)
 	s.router.Get("/api/me", usersC.CurrentUser)
+
+	authMiddleware := &auth.User{
+		UserService: s.services.UserService,
+	}
+
+	// Problem routes
+	problemsC := controllers.NewProblems(s.services.ProblemService)
+	s.router.With(authMiddleware.Require).Post("/api/problems", problemsC.Create)
+
 }
 
 // ServeHTTP makes our Server implemment the http.Handler interface
@@ -67,7 +77,8 @@ func main() {
 
 	// Connect to database
 	dsn := config.GetDSN()
-	userService, err := models.NewUserService(dsn)
+
+	services, err := models.NewServices(dsn)
 
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -75,19 +86,19 @@ func main() {
 
 	defer func() {
 		log.Println("Closing database connection....")
-		if err := userService.DB.Close(); err != nil {
+		if err := services.Close(); err != nil {
 			log.Printf("Error closing DB: %v", err)
 		}
 	}()
 
 	log.Println("Database connected")
 	// Auto-migrate schema
-	if err := userService.DB.DestructiveReset(); err != nil {
+	if err := services.DestructiveReset(); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
 	// Create our server
-	server := NewServer(userService)
+	server := NewServer(services)
 
 	// Graceful shutdown setup
 	addr := config.ServerHost + ":" + config.ServerPort

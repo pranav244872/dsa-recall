@@ -139,7 +139,7 @@ func (u *Users) Logout(w http.ResponseWriter, r *http.Request) {
 ///////////////////////////////////////////////////////////////////////////////
 
 type UserResponse struct {
-	ID    int64  `json:"id"`
+	ID    uint   `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
