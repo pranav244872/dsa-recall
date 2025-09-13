@@ -61,9 +61,18 @@ func (s *Server) configureRouter() {
 	}
 
 	// Problem routes
-	problemsC := controllers.NewProblems(s.services.ProblemService)
+	problemsC := controllers.NewProblems(s.services.ProblemService, s.services.UserService, s.services.ActivityService)
 	s.router.With(authMiddleware.Require).Post("/api/problems", problemsC.Create)
+	s.router.With(authMiddleware.Require).Get("/api/problems/{problemID}", problemsC.Show)
+	s.router.With(authMiddleware.Require).Patch("/api/problems/{problemID}", problemsC.Update)
+	s.router.With(authMiddleware.Require).Delete("/api/problems/{problemID}", problemsC.Delete)
+	s.router.With(authMiddleware.Require).Get("/api/problems", problemsC.List)
+	s.router.With(authMiddleware.Require).Get("/api/problems/due", problemsC.ListDue)
+	s.router.With(authMiddleware.Require).Post("/api/problems/{problemID}/review", problemsC.Review)
 
+	// Activity routes
+	activitiesC := controllers.NewActivities(s.services.ActivityService)
+	s.router.With(authMiddleware.Require).Get("/api/activity/heatmap", activitiesC.Heatmap)
 }
 
 // ServeHTTP makes our Server implemment the http.Handler interface
@@ -93,7 +102,7 @@ func main() {
 
 	log.Println("Database connected")
 	// Auto-migrate schema
-	if err := services.DestructiveReset(); err != nil {
+	if err := services.AutoMigrate(); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 

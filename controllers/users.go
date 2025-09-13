@@ -139,9 +139,11 @@ func (u *Users) Logout(w http.ResponseWriter, r *http.Request) {
 ///////////////////////////////////////////////////////////////////////////////
 
 type UserResponse struct {
-	ID    uint   `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID              uint       `json:"id"`
+	Name            string     `json:"name"`
+	Email           string     `json:"email"`
+	CurrentStreak   int        `json:"currentStreak"`
+	LastPracticedAt *time.Time `json:"lastPracticedAt"`
 }
 
 // CurrentUser acts as a protected endpoint to verify a user's session.
@@ -159,9 +161,11 @@ func (u *Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := UserResponse{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
+		ID:              user.ID,
+		Name:            user.Name,
+		Email:           user.Email,
+		CurrentStreak:   user.CurrentStreak,   // <-- Add this
+		LastPracticedAt: user.LastPracticedAt, // <-- Add this
 	}
 
 	w.Header().Set("Content-Type", "application/json")

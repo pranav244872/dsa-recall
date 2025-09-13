@@ -7,9 +7,10 @@ import (
 )
 
 type Services struct {
-	dbCon          *gorm.DB
-	UserService    *UserService
-	ProblemService *ProblemService
+	dbCon           *gorm.DB
+	UserService     *UserService
+	ProblemService  *ProblemService
+	ActivityService *ActivityService
 }
 
 func NewServices(connectionInfo string) (*Services, error) {
@@ -30,10 +31,13 @@ func NewServices(connectionInfo string) (*Services, error) {
 		return nil, err
 	}
 
+	as := NewActivityService(dbCon)
+
 	return &Services{
-		dbCon:          dbCon,
-		UserService:    us,
-		ProblemService: ps,
+		dbCon:           dbCon,
+		UserService:     us,
+		ProblemService:  ps,
+		ActivityService: as,
 	}, err
 }
 
@@ -48,10 +52,7 @@ func (s *Services) Close() error {
 
 // runs the GORM auto-migration.
 func (s *Services) AutoMigrate() error {
-	if err := s.dbCon.AutoMigrate(&User{}); err != nil {
-		return err
-	}
-	if err := s.dbCon.AutoMigrate(&Problem{}); err != nil {
+	if err := s.dbCon.AutoMigrate(&User{}, &Problem{}, &Activity{}); err != nil {
 		return err
 	}
 	return nil
@@ -59,10 +60,7 @@ func (s *Services) AutoMigrate() error {
 
 // drops and rebuilds the user table.
 func (s *Services) DestructiveReset() error {
-	if err := s.dbCon.Migrator().DropTable(&User{}); err != nil {
-		return err
-	}
-	if err := s.dbCon.Migrator().DropTable(&Problem{}); err != nil {
+	if err := s.dbCon.Migrator().DropTable(&User{}, &Problem{}, &Activity{}); err != nil {
 		return err
 	}
 	return s.AutoMigrate()

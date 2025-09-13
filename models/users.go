@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/mail"
 	"strings"
+	"time"
 
 	"github.com/pranav244872/dsa-recall/config"
 	"github.com/pranav244872/dsa-recall/hash"
@@ -30,12 +31,14 @@ var (
 type User struct {
 	gorm.Model // Includes ID, CreatedAt, UpdatedAt, DeletedAt
 
-	Name         string
-	Email        string `gorm:"not null;uniqueIndex"`
-	Password     string `gorm:"-"`
-	PasswordHash string `gorm:"not null"`
-	Remember     string `gorm:"-"`
-	RememberHash string `gorm:"not null;uniqueIndex"`
+	Name            string
+	Email           string `gorm:"not null;uniqueIndex"`
+	Password        string `gorm:"-"`
+	PasswordHash    string `gorm:"not null"`
+	Remember        string `gorm:"-"`
+	RememberHash    string `gorm:"not null;uniqueIndex"`
+	CurrentStreak   int
+	LastPracticedAt *time.Time
 
 	Problems []Problem `gorm:"foreignKey:UserID"`
 }
